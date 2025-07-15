@@ -1,0 +1,60 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ./backend
+    container_name: backend
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - core
+
+  agent-service:
+    build:
+      context: ./agents
+    container_name: agent-service
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    networks:
+      - core
+
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    env_file:
+      - .env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - core
+
+  redis:
+    image: redis:7
+    container_name: redis
+    volumes:
+      - redisdata:/data
+      - ./infra/redis/redis.conf:/usr/local/etc/redis/redis.conf
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    ports:
+      - "6379:6379"
+    networks:
+      - core
+
+networks:
+  core:
+    driver: bridge
+
+volumes:
+  pgdata:
+  redisdata:
